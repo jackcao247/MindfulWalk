@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mindful Walk demo</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+  <div id="map" style="height: 90vh"></div>
+  <p id="status">Loading street-pole data...</p>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const status = document.querySelector('#status');
+    const map = L.map('map').setView([39.9812, -75.1553], 16);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Pole data: City of Philadelphia'
+    }).addTo(map);
+    const api = 'https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Street_Poles/FeatureServer/0/query';
+    const parameters = new URLSearchParams({
+      where: '1=1',
+      geometry: '-75.162,39.978,-75.151,39.985',
+      geometryType: 'esriGeometryEnvelope',
+      inSR: '4326',
+      outSR: '4326',
+      outFields: 'objectid',
+      returnGeometry: 'true',
+      resultRecordCount: '2000',
+      f: 'json'
+    });
+    async function loadPoles() {
+      try {
+        const response = await fetch(`${api}?${parameters}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+        for (const pole of data.features) {
+          const { x, y } = pole.geometry || {};
+          if (Number.isFinite(x) && Number.isFinite(y)) {
+            L.circleMarker([y, x], { radius: 3 }).addTo(map);
+          }
+        }
+        status.textContent = `${data.features.length} pole records returned.`;
+        if (data.exceededTransferLimit || data.features.length >= 2000) {
+          status.textContent += ' Partial results: API limit reached.';
+        }
+      } catch (error) {
+        status.textContent = `Could not load pole data: ${error.message}`;
+      }
+    }
+    loadPoles();
+  </script>
+</body>
+</html>
