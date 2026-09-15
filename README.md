@@ -1,6 +1,6 @@
 # Mindful Walk
 
-Currently only Temple University area with integration of Philadelphia street lights data
+Currently supporting Temple University area on map with integration of Philadelphia street lights data
 
 ## How to run
 
